@@ -50,17 +50,13 @@ function build_machine(src) {
     return new Machine(map, tuples, statenames);
 }
 
-function run(machine, tapestr, pos, statenodes, edges) {
+function run(machine, tapestr, pos, statenodes, edges, dolater) {
     var q = "0";
     var tape = tapestr.split("");
     var prevedge = null;
     function step() {
         var s = tape[pos] || "_";
         var tuple = machine.map.get(q+","+s);
-        if (prevedge) {
-            $("path", prevedge).attr("stroke", "black");
-            $("polygon", prevedge).attr("fill", "black").attr("stroke", "black");
-        }
         if (!tuple) return;
         var [s1, a, newq] = tuple;
         var newpos = pos;
@@ -72,18 +68,24 @@ function run(machine, tapestr, pos, statenodes, edges) {
         $("path", edges.get(q+","+s)).attr("stroke", "red");
         $("polygon", edges.get(q+","+s)).attr("fill", "red").attr("stroke", "red");
         prevedge = edges.get(q+","+s);
-        change_tape_ui(pos, s1, newpos);
-        $("ellipse", statenodes.get(q)).attr("fill", "none");
-        $("ellipse", statenodes.get(newq)).attr("fill", "yellow");
-        tape[pos] = s1;
-        pos = newpos;
-        q = newq;
+
+        dolater(() => {
+            $("path", prevedge).attr("stroke", "black");
+            $("polygon", prevedge).attr("fill", "black").attr("stroke", "black");
+            change_tape_ui(pos, s1, newpos);
+            $("ellipse", statenodes.get(q)).attr("fill", "none");
+            $("ellipse", statenodes.get(newq)).attr("fill", "yellow");
+            tape[pos] = s1;
+            pos = newpos;
+            q = newq;
+            dolater(step);
+        });
 
     }
     $("ellipse", statenodes.get(q)).attr("fill", "yellow");
-    setTimeout(() => {
-        setInterval(step, 1000);
-    }, 1000);
+    dolater(() => {
+        step();
+    });
 }
 
 function build_tape_ui(text, pos) {
@@ -138,7 +140,15 @@ $(() => {
    var statenodes = build_statenodes(machine);
    var edges = build_edges(machine);
    build_tape_ui(tape, 3);
-   run(machine, tape, pos, statenodes, edges);
+   var task = null;
+   var dolater = (fn) => {
+       task = fn;
+   };
+   dolater = (fn) => {setTimeout(fn, 500)};
+   $("body").click(() => {
+       task();
+   });
+   run(machine, tape, pos, statenodes, edges, dolater);
 });
 </script>
 </head>
