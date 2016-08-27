@@ -120,6 +120,10 @@ $(() => {
    //dolater = (fn) => {setTimeout(fn, 50)};
    $("body").click(() => {
        task();
+   }).keydown((e) => {
+       if (e.key == "ArrowDown") {
+           task();
+       }
    });
    run(machine, tape, pos, statenodes, edges, dolater);
 });
